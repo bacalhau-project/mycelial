@@ -1,19 +1,19 @@
-use crate::jobstore::JobStore;
-use crate::{api::submit, BacalhauPayload};
-
-use section::message::ValueView;
+use arrow_msg::df_to_recordbatch;
 use section::{
     command_channel::{Command, SectionChannel},
-    futures::{self, FutureExt, Sink, SinkExt, Stream, StreamExt},
+    futures::{self, FutureExt, Sink, Stream, StreamExt},
     message::Chunk,
     pretty_print::pretty_print,
     section::Section,
     SectionError, SectionMessage,
 };
+
 use std::collections::HashMap;
+use std::future::Future;
 use std::pin::{pin, Pin};
 
-use std::future::Future;
+use crate::api::submit;
+use crate::jobstore::JobStore;
 
 type StdError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
@@ -76,24 +76,17 @@ impl Bacalhau {
                                     Some(_ch) => continue,
                                 };
 
-
-                                let columns = frame.columns();
-
-
                                 section_channel.log(format!("got dataframe chunk from {}:\n{}", msg.origin(), pretty_print(&*frame))).await?;
 
-                                let mut c = columns.into_iter().nth(0).unwrap();
-                                match c.nth(0).unwrap() {
-                                    ValueView::Str(s) => {
-                                        section_channel.log(format!("got string: {}", s)).await?;
-                                    }
-                                    _ => continue,
-                                }
 
+                                let batch = df_to_recordbatch(frame).unwrap();
+                                let json_rows = arrow_json::writer::record_batches_to_json_rows(&[&batch]).unwrap();
+                                let first = json_rows.first().unwrap();
+                                let args: HashMap<String, String> = first.iter().map(|(k, v)| {
+                                    (k.clone(), v.as_str().unwrap().to_string())
+                                }).collect();
 
-                                //ValueView::Str(child.as_string::<i32>().value(value_offset)),
-                                let args: HashMap<String, String> = HashMap::new();
-                                //args.insert("target".into(), "".into());
+                                section_channel.log(format!("Arguments: {:?}", &args)).await?;
                                 self.submit_job(&args).await?;
 
                                 msg.ack().await;

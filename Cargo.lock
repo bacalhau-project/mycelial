@@ -706,6 +706,9 @@ dependencies = [
 name = "bacalhau"
 version = "0.1.0"
 dependencies = [
+ "arrow 49.0.0",
+ "arrow-json 49.0.0",
+ "arrow_msg",
  "handlebars",
  "reqwest",
  "section",
