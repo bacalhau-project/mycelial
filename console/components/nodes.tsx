@@ -16,6 +16,107 @@ import styles from "@/components/Flow/Flow.module.css";
 import { ClientContext } from "./context/clientContext";
 import { ClientContextType } from "./@types/client";
 
+
+const BacalhauDestinationNode: FC<NodeProps> = memo(({ id, data, selected }) => {
+  const instance = useReactFlow();
+  const { clients } = useContext(ClientContext) as ClientContextType;
+
+  let initialValues = useMemo(() => {
+    return {
+      client: data.client ? data.client : "-",
+      job: data.job ? data.job : "job",
+      jobstore: data.jobstore ? data.jobstore : "jobstore",
+    };
+  }, []);
+
+  const handleChange = useCallback((name: string, value: string) => {
+    instance.setNodes((nodes) =>
+      nodes.map((node) => {
+        if (node.id === id) {
+          node.data = {
+            ...node.data,
+            [name]: value,
+          };
+        }
+
+        return node;
+      }),
+    );
+  }, []);
+
+  useEffect(() => {
+    handleChange("client", initialValues.client);
+    handleChange("job", initialValues.job);
+    handleChange("jobstore", initialValues.jobstore);
+  }, []);
+
+  let classNames = `${styles.customNode} `;
+  if (selected) {
+    classNames = classNames + `${styles.selected}`;
+  }
+
+  const removeNode = useCallback((id: string) => {
+    const node = instance.getNode(id);
+    if (node === undefined) {
+      return;
+    }
+    instance.deleteElements({
+      edges: getConnectedEdges([node], []),
+      nodes: [node],
+    });
+  }, []);
+
+  return (
+    <div className={classNames}>
+      <div className=" grid grid-cols-1 gap-x-6 gap-y-2">
+        <h2 className="text-slate-400 font-normal">HelloWorld Destination</h2>
+        <button
+          onClick={() => {
+            if (confirm("Are you sure you want to delete this node?")) {
+              removeNode(id);
+            }
+          }}
+          type="button"
+          className="absolute right-1 top-1 rounded bg-red-200 text-white shadow-sm hover:bg-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-800"
+          title="delete"
+        >
+          <XMarkIcon className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <Select
+          name="client"
+          label="Client"
+          placeholder="Pick one"
+          defaultValue={initialValues.client}
+          options={(clients || []).map((c) => c.id)}
+          onChange={(value) => {
+            handleChange("client", value || "");
+          }}
+        />
+        <TextInput
+          name="jobstore"
+          label="Job Store"
+          placeholder={initialValues.jobstore}
+          defaultValue={initialValues.jobstore}
+          onChange={(event) => {
+            handleChange("jobstore", event.currentTarget.value)
+          }}
+        />
+        <TextInput
+          name="job"
+          label="Job"
+          placeholder={initialValues.job}
+          defaultValue={initialValues.job}
+          onChange={(event) => {
+            handleChange("job", event.currentTarget.value)
+          }}
+        />
+
+        <Handle type="target" position={Position.Left} id={id} />
+      </div>
+    </div>
+  );
+});
+
 const HelloWorldDestinationNode: FC<NodeProps> = memo(({ id, data, selected }) => {
   const instance = useReactFlow();
   const { clients } = useContext(ClientContext) as ClientContextType;
@@ -1401,7 +1502,7 @@ const PostgresConnectorDestinationNode: FC<NodeProps> = memo(({ id, data, select
 
   let initialValues = useMemo(() => {
     return {
-      url: data.url? data.url: "postgres://root:root@127.0.0.1:5432/test",
+      url: data.url ? data.url : "postgres://root:root@127.0.0.1:5432/test",
       client: data.client ? data.client : "-",
     };
   }, []);
@@ -1485,7 +1586,7 @@ const MysqlConnectorDestinationNode: FC<NodeProps> = memo(({ id, data, selected 
 
   let initialValues = useMemo(() => {
     return {
-      url: data.url? data.url: "mysql://root:root@127.0.0.1:3306/test",
+      url: data.url ? data.url : "mysql://root:root@127.0.0.1:3306/test",
       client: data.client ? data.client : "-",
     };
   }, []);
@@ -1745,6 +1846,7 @@ export {
   KafkaDestination,
   SnowflakeSourceNode,
   SnowflakeDestinationNode,
+  BacalhauDestinationNode,
   HelloWorldSourceNode,
   HelloWorldDestinationNode,
   PostgresConnectorSourceNode,

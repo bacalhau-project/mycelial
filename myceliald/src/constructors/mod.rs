@@ -1,3 +1,4 @@
+pub mod bacalhau;
 pub mod excel_connector;
 pub mod file;
 pub mod hello_world;

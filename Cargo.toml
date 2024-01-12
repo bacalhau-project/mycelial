@@ -6,6 +6,7 @@ members = [
     "pipe/runtime",
     "pipe/arrow_msg",
     "pipe/section",
+    "pipe/section/section_impls/bacalhau",
     "pipe/section/section_impls/hello_world",
     "pipe/section/section_impls/sqlite_connector",
     "pipe/section/section_impls/excel_connector",

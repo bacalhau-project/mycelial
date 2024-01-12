@@ -80,6 +80,13 @@ path = "Cargo.toml"
 # Define all data DESTINATIONS (data stores and directory paths)
 # accessible by the Node that should be exposed as DESTINATIONS to the Sqlite Physical Replication Server
 
+
+[[destinations]]
+display_name = "Bacalhau"
+jobstore = "c:/temp/jobstore"
+type = "bacalhau"
+job = "jobname"
+
 [[destinations]]
 type = "sqlite_physical_replication"
 display_name = "Sqlite Physical Replication Movie"

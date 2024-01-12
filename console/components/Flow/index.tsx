@@ -40,6 +40,7 @@ import {
   KafkaSourceNode,
   SnowflakeSourceNode,
   SnowflakeDestinationNode,
+  BacalhauDestinationNode,
   HelloWorldSourceNode,
   HelloWorldDestinationNode,
   ExcelSourceNode,
@@ -75,11 +76,10 @@ const useStyles = createStyles((theme) => ({
     marginBottom: theme.spacing.md,
 
     "&:not(:last-of-type)": {
-      borderBottom: `${rem(1)} solid ${
-        theme.colorScheme === "dark"
-          ? theme.colors.dark[4]
-          : theme.colors.gray[3]
-      }`,
+      borderBottom: `${rem(1)} solid ${theme.colorScheme === "dark"
+        ? theme.colors.dark[4]
+        : theme.colors.gray[3]
+        }`,
     },
   },
 
@@ -186,6 +186,7 @@ const nodeTypes = {
   snowflake_destination: SnowflakeDestinationNode,
   hello_world_source: HelloWorldSourceNode,
   hello_world_destination: HelloWorldDestinationNode,
+  bacalhau_destination: BacalhauDestinationNode,
   postgres_connector_source: PostgresConnectorSourceNode,
   postgres_connector_destination: PostgresConnectorDestinationNode,
   mysql_connector_destination: MysqlConnectorDestinationNode,
@@ -286,7 +287,7 @@ function NavbarSearch(props: NavbarSearchProps) {
         onDragStart={(event) => onDragStart(event, null, source, source)}
         draggable
       >
-        Mycelial Server 
+        Mycelial Server
       </div>,
     ];
   };
@@ -345,7 +346,7 @@ async function getConfigs(token: string) {
     });
     const result = await response.json();
     return result;
-  } catch (error) {}
+  } catch (error) { }
 }
 
 const dagreGraph = new dagre.graphlib.Graph();
@@ -568,7 +569,7 @@ function Flow() {
 
       if (edge.data?.id) {
         let payload = {
-          configs: [{id: edge.data.id, pipe: pipe}]
+          configs: [{ id: edge.data.id, pipe: pipe }]
         }
         try {
           const response = await fetch("/api/pipe", {
@@ -586,7 +587,7 @@ function Flow() {
         }
       } else {
         let payload = {
-          configs: [{pipe: pipe}]
+          configs: [{ pipe: pipe }]
         }
         const response = await fetch("/api/pipe", {
           method: "POST",
@@ -609,7 +610,7 @@ function Flow() {
                   id: id,
                 },
               }
-            } 
+            }
             return ed;
           });
         })
