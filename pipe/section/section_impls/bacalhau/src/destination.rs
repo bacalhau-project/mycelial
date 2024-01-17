@@ -79,7 +79,7 @@ impl Bacalhau {
                                 section_channel.log(format!("got dataframe chunk from {}:\n{}", msg.origin(), pretty_print(&*frame))).await?;
 
 
-                                let batch = df_to_recordbatch(frame).unwrap();
+                                let batch = df_to_recordbatch(frame.as_ref()).unwrap();
                                 let json_rows = arrow_json::writer::record_batches_to_json_rows(&[&batch]).unwrap();
                                 let first = json_rows.first().unwrap();
                                 let args: HashMap<String, String> = first.iter().map(|(k, v)| {
