@@ -15,7 +15,6 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sqlx = { version = "0.7", features = ["sqlite"] }
 log = "0.4"
-pretty_env_logger = "0.5"
 toml = "0.7"
 common = { path = "../common" }
 thiserror = "1"
@@ -32,6 +31,12 @@ kafka_connector = { path = "../pipe/section/section_impls/kafka_connector/" }
 mycelial_server = { path = "../pipe/section/section_impls/mycelial_server/" }
 snowflake = { path = "../pipe/section/section_impls/snowflake/" }
 tagging_transformer = { path = "../pipe/section/section_impls/tagging_transformer/" }
+typecast_transformer = { path = "../pipe/section/section_impls/typecast_transformer" }
 mysql_connector = { path = "../pipe/section/section_impls/mysql_connector/" }
 file = { path = "../pipe/section/section_impls/file/" }
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+notify = { version = "6.1.1", features = ["macos_kqueue"] }
+notify-debouncer-full = "0.3.1"
+sha2 = "0.10.8"
 #sqlite_physical_replication = { path = "../pipe/section/section_impls/sqlite_physical_replication/" }

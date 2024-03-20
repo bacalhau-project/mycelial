@@ -1,14 +1,11 @@
 use std::pin::pin;
 use std::sync::Arc;
 
-use arrow::array::StringArray;
-use arrow::datatypes::DataType as ArrowDataType;
-use arrow::datatypes::Field;
-use arrow::datatypes::SchemaBuilder;
-use arrow::record_batch::RecordBatch as ArrowRecordBatch;
-
-use arrow_msg::df_to_recordbatch;
-use arrow_msg::ArrowMsg;
+use arrow_msg::{
+    arrow::array::StringArray, arrow::datatypes::DataType as ArrowDataType,
+    arrow::datatypes::Field, arrow::datatypes::SchemaBuilder,
+    arrow::record_batch::RecordBatch as ArrowRecordBatch, df_to_recordbatch, ArrowMsg,
+};
 
 use section::command_channel::{Command, SectionChannel};
 use section::futures::{self, Sink, SinkExt, Stream};
@@ -88,7 +85,7 @@ where
                                                 .iter()
                                                 .map(std::borrow::ToOwned::to_owned)
                                                 .collect::<Vec<_>>();
-                                            let tag = Arc::new(StringArray::from(vec![self.text.clone()]));
+                                            let tag = Arc::new(StringArray::from(vec![self.text.clone(); values[0].len()]));
                                             values.push(tag);
 
                                             // create a new arrow RecordBatch from the schema and columns

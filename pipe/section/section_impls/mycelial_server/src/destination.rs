@@ -1,10 +1,8 @@
 //! Mycelial Net
 //!
 //! network section, dumps incoming messages to provided http endpoint
-use arrow::ipc::writer::StreamWriter;
-use arrow_msg::df_to_recordbatch;
+use arrow_msg::{arrow::ipc::writer::StreamWriter, df_to_recordbatch};
 use async_stream::stream;
-use base64::engine::{general_purpose::STANDARD as BASE64, Engine};
 use reqwest::Body;
 use section::{
     command_channel::{Command, SectionChannel},
@@ -13,6 +11,7 @@ use section::{
     section::Section,
     SectionError, SectionFuture, SectionMessage,
 };
+use std::fmt::Display;
 use std::{
     pin::{pin, Pin},
     task::{Context, Poll},
@@ -21,8 +20,58 @@ use std::{
 #[derive(Debug)]
 pub struct Mycelial {
     endpoint: String,
-    token: String,
     topic: String,
+}
+
+// should we just introduce additional method in message trait to indicate stream type?
+#[derive(Debug)]
+pub(crate) enum StreamType<T> {
+    DataFrame(T),
+    BinStream(T),
+}
+
+impl<T> StreamType<T> {
+    fn into_inner(self) -> T {
+        match self {
+            Self::DataFrame(s) => s,
+            Self::BinStream(s) => s,
+        }
+    }
+}
+
+impl<T> Display for StreamType<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let desc = match self {
+            StreamType::DataFrame(_) => "arrow", // dataframe will be converted to arrow record batch
+            StreamType::BinStream(_) => "binary",
+        };
+        write!(f, "{}", desc)
+    }
+}
+
+async fn to_stream(
+    mut msg: Box<dyn Message>,
+) -> StreamType<impl Stream<Item = Result<Chunk, SectionError>>> {
+    let chunk = msg.next().await;
+    let is_df = matches!(chunk, Ok(Some(Chunk::DataFrame(_))));
+    let stream = stream! {
+        match chunk {
+            Ok(Some(v)) => yield Ok(v),
+            Err(e) => yield Err(e),
+            Ok(None) => return
+        }
+        loop {
+            match msg.next().await {
+                Ok(Some(v)) => yield Ok(v),
+                Err(e) => yield Err(e),
+                Ok(None) => return
+            }
+        }
+    };
+    match is_df {
+        true => StreamType::DataFrame(stream),
+        false => StreamType::BinStream(stream),
+    }
 }
 
 struct S<T: Stream> {
@@ -42,26 +91,10 @@ impl<T: Stream> Stream for S<T> {
     }
 }
 
-fn to_stream(mut msg: Box<dyn Message>) -> impl Stream<Item = Result<Chunk, SectionError>> {
-    let inner = stream! { loop {
-        match msg.next().await {
-            Ok(Some(v)) => yield Ok(v),
-            Err(e) => yield Err(e),
-            Ok(None) => break,
-        }
-    } };
-    S { inner }
-}
-
 impl Mycelial {
-    pub fn new(
-        endpoint: impl Into<String>,
-        token: impl Into<String>,
-        topic: impl Into<String>,
-    ) -> Self {
+    pub fn new(endpoint: impl Into<String>, topic: impl Into<String>) -> Self {
         Self {
             endpoint: endpoint.into(),
-            token: token.into(),
             topic: topic.into(),
         }
     }
@@ -94,8 +127,10 @@ impl Mycelial {
                     };
                     let origin = msg.origin().to_string();
                     let ack = msg.ack();
-                    let msg_stream = to_stream(msg);
+                    let msg_stream = to_stream(msg).await;
+                    let stream_type = msg_stream.to_string();
                     let msg_stream = msg_stream
+                        .into_inner()
                         .map_ok(|chunk| {
                             match chunk {
                                 Chunk::DataFrame(df) => {
@@ -110,15 +145,15 @@ impl Mycelial {
                                 Chunk::Byte(bin) => bin,
                             }
                         });
-                    let body = Body::wrap_stream(msg_stream);
+                    let body = Body::wrap_stream(S{ inner: msg_stream });
                     let _ = client
                         .post(format!(
                             "{}/{}",
                             self.endpoint.as_str().trim_end_matches('/'),
                             self.topic
                         ))
-                        .header("Authorization", self.basic_auth())
                         .header("x-message-origin", origin)
+                        .header("x-stream-type", stream_type)
                         .body(body)
                         .send()
                         .await?;
@@ -126,10 +161,6 @@ impl Mycelial {
                 },
             }
         }
-    }
-
-    fn basic_auth(&self) -> String {
-        format!("Basic {}", BASE64.encode(format!("{}:", self.token)))
     }
 }
 

@@ -1,3 +1,7 @@
+// FIXME:  drop this crate
+// - sharing same structs between server and daemon is not a good idea, especially if we want to
+// support versioned API and allow older daemons to communicate with newer server
+// - section configuration should be property of section library
 use pipe::config::{Config as DynamicPipeConfig, Value as DynamicPipeValue};
 use section::SectionError;
 use serde::{Deserialize, Serialize};
@@ -20,15 +24,18 @@ pub struct ClientConfig {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Server {
     pub endpoint: String,
-    pub token: String,
 }
 
 /// Generic node config
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Node {
+    // FIXME: that's property of control plane
     pub display_name: String,
+    // FIXME: that's property of control plane
     pub unique_id: String,
     pub storage_path: String,
+    // FIXME: why auth_token is here and not in Server section?
+    pub auth_token: String,
 }
 
 /// Internally-tagged type of a source needs to match the variant name
@@ -38,13 +45,14 @@ pub struct Node {
 pub enum Source {
     Sqlite_Connector(SqliteSourceConfig),
     Kafka(KafkaConfig),
-    Snowflake(SnowflakeDestinationConfig),
+    Snowflake(SnowflakeSourceConfig),
     Sqlite_Physical_Replication(SqlitePhysicalReplicationSourceConfig),
     Hello_World(HelloWorldSourceConfig),
     Excel_Connector(ExcelConfig),
     Postgres_Connector(PostgresConnectorConfig),
-    // TODO: either we need to add another enum for transformers, or merge these two into "sections" and make the section itself know if it supports sourcing, transforming, or destinationing
+    // TODO: either we need to add another enum for transformers, or merge these two into "sections" and make the section itself know it's ability to source, destination, or transform
     Tagging_Transformer(TaggingTransformerConfig),
+    Typecast_Transformer(TypecastTransformerConfig),
     Mysql_Connector(MysqlConnectorSourceConfig),
     File(FileSourceConfig),
 }
@@ -77,7 +85,8 @@ pub struct SqliteSourceConfig {
     #[serde(flatten)]
     pub common_attrs: CommonAttrs,
     pub path: String,
-    pub tables: String,
+    pub origin: String,
+    pub query: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -85,6 +94,7 @@ pub struct SqliteDestinationConfig {
     #[serde(flatten)]
     pub common_attrs: CommonAttrs,
     pub path: String,
+    pub truncate: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -92,8 +102,8 @@ pub struct PostgresConnectorConfig {
     #[serde(flatten)]
     pub common_attrs: CommonAttrs,
     pub url: String,
-    pub schema: String,
-    pub tables: String,
+    pub origin: String,
+    pub query: String,
     pub poll_interval: u64,
 }
 
@@ -140,6 +150,7 @@ pub struct SnowflakeDestinationConfig {
     pub warehouse: String,
     pub database: String,
     pub schema: String,
+    pub truncate: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -175,6 +186,14 @@ pub struct TaggingTransformerConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct TypecastTransformerConfig {
+    #[serde(flatten)]
+    pub common_attrs: CommonAttrs,
+    pub column: String,
+    pub target_type: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct HelloWorldDestinationConfig {
     #[serde(flatten)]
     pub common_attrs: CommonAttrs,
@@ -201,6 +220,8 @@ pub struct PostgresConnectorDestinationConfig {
     #[serde(flatten)]
     pub common_attrs: CommonAttrs,
     pub url: String,
+    pub schema: String,
+    pub truncate: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -208,8 +229,8 @@ pub struct MysqlConnectorSourceConfig {
     #[serde(flatten)]
     pub common_attrs: CommonAttrs,
     pub url: String,
-    pub schema: String,
-    pub tables: String,
+    pub origin: String,
+    pub query: String,
     pub poll_interval: i64,
 }
 
@@ -225,6 +246,7 @@ pub struct MysqlConnectorDestinationConfig {
     #[serde(flatten)]
     pub common_attrs: CommonAttrs,
     pub url: String,
+    pub truncate: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -236,15 +258,19 @@ pub struct FileDestinationConfig {
 
 // requests and responses
 // todo: move to a module
-
+// FIXME: don't share daemon & server internals.
+// FIXME: redo provisioning
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ProvisionClientRequest {
-    pub client_config: ClientConfig,
+pub struct ProvisionDaemonRequest {
+    // FIXME: unique_id/display_name properties of control plane
+    pub unique_id: String,
+    pub display_name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ProvisionClientResponse {
-    pub id: String,
+pub struct ProvisionDaemonResponse {
+    pub client_id: String,
+    pub client_secret: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -273,7 +299,8 @@ pub struct PipeConfig {
     /// To do that - each pipe config needs to be uniquely identified, so here is i64 integer to
     /// help with that. Signed due to Sqlite backed storage
     #[serde(default)]
-    #[sqlx(try_from = "i64")]
+    // FIXME: try_from
+    #[sqlx(try_from = "i32")]
     pub id: u64,
 
     /// # Example of config
@@ -295,13 +322,16 @@ pub struct PipeConfig {
     ///         ]
     /// }]}
     /// ```
+    // FIXME: renaming
     #[sqlx(rename = "raw_config")]
     pub pipe: serde_json::Value,
+    // FIXME: default_id, try_from cast
     #[sqlx(try_from = "i64")]
     #[serde(default = "default_id")]
     pub workspace_id: u64,
 }
 
+// FIXME:
 fn default_id() -> u64 {
     1
 }
