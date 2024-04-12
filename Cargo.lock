@@ -919,8 +919,8 @@ dependencies = [
 name = "bacalhau"
 version = "0.1.0"
 dependencies = [
- "arrow 49.0.0",
- "arrow-json 49.0.0",
+ "arrow 50.0.0",
+ "arrow-json 50.0.0",
  "arrow_msg",
  "handlebars",
  "reqwest",
@@ -2496,6 +2496,7 @@ dependencies = [
  "sqlite_connector",
  "sqlx",
  "tagging_transformer",
+ "thiserror",
  "tokio",
  "toml",
  "tracing",

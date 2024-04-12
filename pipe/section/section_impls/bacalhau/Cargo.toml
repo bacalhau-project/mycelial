@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arrow = { version = "49", features = ["prettyprint"] }
-arrow-json = "49"
+arrow = { version = "50", features = ["prettyprint"] }
+arrow-json = "50"
 arrow_msg = { path = "../../../arrow_msg" }
 section = { version = "0.3", path = "../../../section/" }
 serde = { version = "1", features = ["derive"] }
