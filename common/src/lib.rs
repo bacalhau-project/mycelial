@@ -65,6 +65,7 @@ pub enum Destination {
     Sqlite_Connector(SqliteDestinationConfig),
     Snowflake(SnowflakeDestinationConfig),
     Sqlite_Physical_Replication(SqlitePhysicalReplicationDestinationConfig),
+    Bacalhau(BacalhauDestinationConfig),
     Hello_World(HelloWorldDestinationConfig),
     Kafka(KafkaDestinationConfig),
     Postgres_Connector(PostgresConnectorDestinationConfig),
@@ -158,6 +159,14 @@ pub struct SqlitePhysicalReplicationSourceConfig {
     pub common_attrs: CommonAttrs,
     pub journal_path: String,
     // database path
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct BacalhauDestinationConfig {
+    #[serde(flatten)]
+    pub common_attrs: CommonAttrs,
+    pub job: String,
+    pub jobstore: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

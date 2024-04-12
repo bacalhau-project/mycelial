@@ -16,6 +16,10 @@ use section::command_channel::SectionChannel;
 fn setup_registry<S: SectionChannel>() -> Registry<S> {
     let arr: &[(&str, Constructor<S>)] = &[
         (
+            "bacalhau_destination",
+            constructors::bacalhau::destination_ctor,
+        ),
+        (
             "hello_world_destination",
             constructors::hello_world::destination_ctor,
         ),
